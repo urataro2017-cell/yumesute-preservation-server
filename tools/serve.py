@@ -129,6 +129,15 @@ install_gift(app)
 @app.middleware('http')
 async def local_files(request,call_next):
     path=request.url.path
+    import time as _time
+    _t0=_time.time()
+    print('[DEBUG REQ] START %s %s'%(request.method,path),flush=True)
+    try:
+        return await _local_files_inner(request,call_next,path)
+    finally:
+        print('[DEBUG REQ] END   %s %s (%.2fs)'%(request.method,path,_time.time()-_t0),flush=True)
+
+async def _local_files_inner(request,call_next,path):
     if path == '/master-data/production/help.bin':
         help_file=ROOT/'private/upstream/help.bin'
         if help_file.is_file():return FileResponse(help_file,media_type='application/octet-stream')

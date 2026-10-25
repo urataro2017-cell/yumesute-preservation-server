@@ -22,6 +22,18 @@ import qrcode.image.svg
 
 class LocalServer:
     def __init__(self, port): self.port = port
+    def client_connected(self, client):
+        print(f"[DIAG] client_connected: {client.peername}", flush=True)
+    def tls_clienthello(self, data):
+        print(f"[DIAG] tls_clienthello sni={data.client_hello.sni!r} "
+              f"server={data.context.server.address if data.context.server else None}",
+              flush=True)
+    def tls_start_client(self, data):
+        print(f"[DIAG] tls_start_client sni={data.context.client.sni!r}", flush=True)
+    def tls_established_client(self, data):
+        print(f"[DIAG] tls_established_client sni={data.context.client.sni!r}", flush=True)
+    def tcp_start(self, flow):
+        print(f"[DIAG] tcp_start: client={flow.client_conn.peername} server={flow.server_conn.address}", flush=True)
     def tls_failed_client(self, data):
         host = data.conn.sni or data.context.server.sni
         if host in ("lb-api.wds-stellarium.com", "assets-e.wds-stellarium.com", "lb-realtime.wds-stellarium.com"):
@@ -30,7 +42,21 @@ class LocalServer:
                   "If another installation already works, restart with --ca-dir pointing to its local CA store.",
                   flush=True)
 
+    def error(self, flow):
+        print(f"[DIAG] error: {flow.error}", flush=True)
+    def client_disconnected(self, client):
+        print(f"[DIAG] client_disconnected: {client.peername}", flush=True)
+    def response(self, flow):
+        body = flow.response.content if flow.response else b""
+        print(f"[DIAG] response: {flow.request.pretty_host} {flow.request.path} -> "
+              f"{flow.response.status_code if flow.response else None} "
+              f"len={len(body)} preview={body[:200]!r}", flush=True)
+    def server_connect(self, data):
+        print(f"[DIAG] server_connect: {data.server.address}", flush=True)
+    def server_connected(self, data):
+        print(f"[DIAG] server_connected: {data.server.address}", flush=True)
     def request(self, flow):
+        print(f"[DIAG] request: {flow.request.pretty_host} {flow.request.path}", flush=True)
         host = flow.request.pretty_host
         names = (host, getattr(flow.server_conn, "sni", None))
         host = next((n for n in names if n in ("lb-api.wds-stellarium.com", "assets-e.wds-stellarium.com", "lb-realtime.wds-stellarium.com")), host)
